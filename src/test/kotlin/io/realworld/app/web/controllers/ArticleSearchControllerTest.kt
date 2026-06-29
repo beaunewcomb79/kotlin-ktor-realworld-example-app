@@ -96,4 +96,24 @@ class ArticleSearchControllerTest {
         assertEquals(0, response.body.articlesCount)
         assertTrue(response.body.articles.isEmpty())
     }
+
+    @Test
+    fun `search honors the limit pagination parameter`() {
+        val email = "search_page@valid_email.com"
+        val password = "Test"
+        appRule.http.registerUser(email, password, "search_page_user")
+        appRule.http.loginAndSetTokenHeader(email, password)
+        listOf("Paginationmarker one", "Paginationmarker two").forEach { title ->
+            appRule.http.post<ArticleDTO>(
+                "/api/articles",
+                ArticleDTO(Article(title = title, description = "d", body = "b", tagList = listOf("p")))
+            )
+        }
+
+        val response = appRule.http.get<ArticlesDTO>("/api/articles/search?q=paginationmarker&limit=1")
+
+        assertEquals(HttpStatus.SC_OK, response.status)
+        assertEquals(1, response.body.articles.size)
+        assertEquals(response.body.articles.size, response.body.articlesCount)
+    }
 }
