@@ -34,7 +34,7 @@ class ArticleService(
 
     private fun uniqueSlug(title: String?): String {
         require(!title.isNullOrBlank()) { "Article title must not be blank." }
-        val base = title.toLowerCase()
+        val base = title.lowercase()
             .replace(Regex("[^a-z0-9]+"), "-")
             .trim('-')
             .ifBlank { "article" }
