@@ -27,7 +27,7 @@ fun Routing.users(userController: UserController) {
 }
 
 fun Routing.profiles(profileController: ProfileController) {
-    route("profiles/{username}") {
+    route("api/profiles/{username}") {
         authenticate(optional = true) {
             get { profileController.get(this.context) }
         }
@@ -41,8 +41,9 @@ fun Routing.profiles(profileController: ProfileController) {
 }
 
 fun Routing.articles(articleController: ArticleController, commentController: CommentController) {
-    route("articles") {
+    route("api/articles") {
         authenticate {
+            get("search") { articleController.search(this.context) }
             get("feed") { articleController.feed(this.context) }
             route("{slug}") {
                 route("comments") {

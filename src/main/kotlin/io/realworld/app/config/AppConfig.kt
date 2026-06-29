@@ -19,6 +19,8 @@ import io.ktor.server.engine.EngineAPI
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.util.KtorExperimentalAPI
+import io.realworld.app.domain.exceptions.NotFoundException
+import io.realworld.app.domain.exceptions.UnauthorizedException
 import io.realworld.app.utils.JwtProvider
 import io.realworld.app.web.ErrorResponse
 import io.realworld.app.web.articles
@@ -80,6 +82,15 @@ fun Application.mainModule() {
         }
     }
     install(StatusPages) {
+        exception(NotFoundException::class.java) {
+            context.respond(HttpStatusCode.NotFound, ErrorResponse(mapOf("body" to listOf(it.message))))
+        }
+        exception(UnauthorizedException::class.java) {
+            context.respond(HttpStatusCode.Unauthorized, ErrorResponse(mapOf("body" to listOf(it.message))))
+        }
+        exception(IllegalArgumentException::class.java) {
+            context.respond(HttpStatusCode.UnprocessableEntity, ErrorResponse(mapOf("body" to listOf(it.message))))
+        }
         exception(Exception::class.java) {
             val errorResponse = ErrorResponse(mapOf("error" to listOf("detail", this.toString())))
             context.respond(
