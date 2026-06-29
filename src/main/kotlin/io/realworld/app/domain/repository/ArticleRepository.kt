@@ -64,7 +64,7 @@ class ArticleRepository {
      * Each returned [Article] carries its [authorId] so the service can resolve the author.
      */
     fun search(term: String, limit: Int, offset: Int): List<Pair<Article, Long>> = transaction {
-        val pattern = "%${term.toLowerCase()}%"
+        val pattern = "%${term.lowercase()}%"
         Articles.select {
             (Articles.title.lowerCase() like pattern) or (Articles.body.lowerCase() like pattern)
         }
