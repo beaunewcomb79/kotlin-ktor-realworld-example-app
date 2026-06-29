@@ -1,0 +1,72 @@
+name: RealWorld API spec (bonus)
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-spec:
+    name: RealWorld Postman spec (newman)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build runnable distribution
+        run: ./gradlew installDist --no-daemon
+
+      - name: Start server
+        run: |
+          ./build/install/api/bin/api > server.log 2>&1 &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for server on :8080
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/tags || true)
+            if [ "$code" = "200" ]; then echo "server is up"; exit 0; fi
+            sleep 2
+          done
+          echo "server did not start in time"; cat server.log; exit 1
+
+      # The bundled Postman collection exercises the full RealWorld spec, but this
+      # app implements only a subset (and routes users at the root rather than /api),
+      # so the suite is expected to report failures. Run it for signal without
+      # failing the pipeline.
+      - name: Run RealWorld API spec
+        continue-on-error: true
+        env:
+          APIURL: http://localhost:8080/api
+        run: ./spec-api/run-api-tests.sh
+
+      - name: Stop server
+        if: always()
+        run: kill "$SERVER_PID" 2>/dev/null || true
+
+      - name: Upload server log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spec-api-server-log
+          path: server.log
+          if-no-files-found: ignore
